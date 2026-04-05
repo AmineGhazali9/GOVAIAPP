@@ -1,0 +1,21 @@
+# Dépendances GOVAIAPP
+
+# API
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+pydantic>=2.7.0
+python-dotenv>=1.0.0
+
+# UI
+streamlit>=1.35.0
+
+# Agents
+pyautogen>=0.2.0
+
+# RAG – Azure AI Search
+azure-search-documents>=11.4.0
+openai>=1.30.0
+
+# Tests
+pytest>=8.2.0
+httpx>=0.27.0
