@@ -1,0 +1,1 @@
+"""Package autogen GOVAIAPP -- orchestration des agents metier via AutoGen AG2."""
