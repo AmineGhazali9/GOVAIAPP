@@ -48,10 +48,35 @@ def test_generate_policy_invalid_empty_nom() -> None:
     assert response.status_code == 422
 
 
-def test_generate_policy_no_principes() -> None:
-    """POST /generate-policy sans principes_directeurs doit retourner 200 avec fallback."""
+def test_generate_policy_no_principes(monkeypatch) -> None:
+    monkeypatch.setenv("FOUNDRY_ENABLED", "false")
     payload = {k: v for k, v in VALID_PAYLOAD.items() if k != "principes_directeurs"}
     response = client.post("/generate-policy", json=payload)
     assert response.status_code == 200
     assert "_Aucun principe renseigné._" in response.json()["policy_markdown"]
+
+
+def test_foundry_disabled_uses_stub(monkeypatch) -> None:
+    """Quand FOUNDRY_ENABLED=false, le stub local est utilise (pas Foundry)."""
+    monkeypatch.setenv("FOUNDRY_ENABLED", "false")
+    response = client.post("/generate-policy", json=VALID_PAYLOAD)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["policy_markdown"]
+    assert isinstance(data["sources"], list)
+    assert len(data["sources"]) > 0
+    # En mode stub, les sources viennent du cache local (pas de Foundry)
+    assert any(s["title"] != "Azure AI Foundry AgentProducteur" for s in data["sources"])
+
+def test_foundry_enabled_missing_config_fallback(monkeypatch) -> None:
+    """FOUNDRY_ENABLED=true mais agent ID absent -> fallback stub, status 200."""
+    monkeypatch.setenv("FOUNDRY_ENABLED", "true")
+    monkeypatch.delenv("FOUNDRY_AGENT_PRODUCTEUR_ID", raising=False)
+    monkeypatch.delenv("FOUNDRY_PROJECT_ENDPOINT", raising=False)
+    response = client.post("/generate-policy", json=VALID_PAYLOAD)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["policy_markdown"]
+    assert isinstance(data["sources"], list)
+    assert len(data["sources"]) > 0
 

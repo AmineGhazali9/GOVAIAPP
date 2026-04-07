@@ -1,4 +1,4 @@
-# tests/test_ui_smoke.py — tests smoke UI Streamlit GOVAIAPP
+﻿# tests/test_ui_smoke.py â€” tests smoke UI Streamlit GOVAIAPP
 import importlib
 import sys
 from typing import Any
@@ -15,7 +15,7 @@ def _mock_streamlit() -> MagicMock:
     mock_st.form.return_value.__enter__ = MagicMock(return_value=None)
     mock_st.form.return_value.__exit__ = MagicMock(return_value=False)
 
-    # Important: éviter l'appel API pendant l'import
+    # Important: Ã©viter l'appel API pendant l'import
     mock_st.form_submit_button.return_value = False
 
     # Valeurs UI "propres" (JSON-serializable)
@@ -40,37 +40,37 @@ def patch_streamlit():
     sys.modules.pop("app.ui.app", None)
 
 
-# ── Import ────────────────────────────────────────────────────────────────────
+# â”€â”€ Import â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def test_ui_module_imports() -> None:
     """Le module app.ui.app doit s'importer sans erreur (sans Streamlit runtime)."""
     importlib.import_module("app.ui.app")
 
 
-# ── parse_principes ───────────────────────────────────────────────────────────
+# â”€â”€ parse_principes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def test_parse_principes_normal() -> None:
     """parse_principes doit splitter les lignes non vides."""
     mod = importlib.import_module("app.ui.app")
-    result = mod.parse_principes("Transparence\nResponsabilité\n\nÉquité\n")
-    assert result == ["Transparence", "Responsabilité", "Équité"]
+    result = mod.parse_principes("Transparence\nResponsabilitÃ©\n\nÃ‰quitÃ©\n")
+    assert result == ["Transparence", "ResponsabilitÃ©", "Ã‰quitÃ©"]
 
 
 def test_parse_principes_empty() -> None:
-    """parse_principes sur chaîne vide doit retourner une liste vide."""
+    """parse_principes sur chaÃ®ne vide doit retourner une liste vide."""
     mod = importlib.import_module("app.ui.app")
     assert mod.parse_principes("") == []
     assert mod.parse_principes("   \n  \n") == []
 
 
 def test_parse_principes_strips_whitespace() -> None:
-    """parse_principes doit ignorer les espaces en début/fin de ligne."""
+    """parse_principes doit ignorer les espaces en dÃ©but/fin de ligne."""
     mod = importlib.import_module("app.ui.app")
-    result = mod.parse_principes("  Équité  \n  Inclusion ")
-    assert result == ["Équité", "Inclusion"]
+    result = mod.parse_principes("  Ã‰quitÃ©  \n  Inclusion ")
+    assert result == ["Ã‰quitÃ©", "Inclusion"]
 
 
-# ── call_generate_policy ──────────────────────────────────────────────────────
+# â”€â”€ call_generate_policy â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def _make_mock_response(json_data: dict[str, Any], status_code: int = 200) -> MagicMock:
     mock_resp = MagicMock()
@@ -81,7 +81,7 @@ def _make_mock_response(json_data: dict[str, Any], status_code: int = 200) -> Ma
 
 
 def test_call_generate_policy_success() -> None:
-    """call_generate_policy retourne le JSON en cas de succès."""
+    """call_generate_policy retourne le JSON en cas de succÃ¨s."""
     mod = importlib.import_module("app.ui.app")
     expected = {"policy_markdown": "# Test", "sources": []}
     mock_resp = _make_mock_response(expected)
@@ -89,7 +89,7 @@ def test_call_generate_policy_success() -> None:
     with patch("httpx.post", return_value=mock_resp) as mock_post:
         result = mod.call_generate_policy({"nom": "X"}, base_url="http://testserver")
         mock_post.assert_called_once_with(
-            "http://testserver/generate-policy", json={"nom": "X"}, timeout=30
+            "http://testserver/generate-policy", json={"nom": "X"}, timeout=60
         )
         mock_resp.raise_for_status.assert_called_once()
 

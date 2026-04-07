@@ -1,4 +1,4 @@
-# Dépendances GOVAIAPP
+# Dependances GOVAIAPP
 
 # API
 fastapi>=0.111.0
@@ -9,13 +9,19 @@ python-dotenv>=1.0.0
 # UI
 streamlit>=1.35.0
 
-# Agents
-pyautogen>=0.2.0
+# Agents (AG2 0.7 -- autogen_agentchat + autogen_core)
+autogen-agentchat>=0.7.0
+autogen-core>=0.7.0
 
-# RAG – Azure AI Search
+# RAG -- Azure AI Search
 azure-search-documents>=11.4.0
 openai>=1.30.0
 
 # Tests
 pytest>=8.2.0
 httpx>=0.27.0
+
+# Azure
+azure-identity>=1.16.0
+azure-ai-agents>=1.1.0
+azure-ai-projects>=2.0.0

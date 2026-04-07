@@ -1,8 +1,11 @@
-"""Stub RAG local – lit data/watch/veille_cache.md."""
+"""Retriever RAG – Azure AI Search quand configuré, stub local sinon."""
 
 import logging
 import re
 from pathlib import Path
+
+from app.rag._azure_client import is_configured
+from app.rag._azure_client import search as azure_search
 
 logger = logging.getLogger(__name__)
 
@@ -10,12 +13,33 @@ CACHE_PATH = Path(__file__).parent.parent.parent / "data" / "watch" / "veille_ca
 
 
 def retrieve(query: str) -> list[dict[str, str]]:
-    """Retourne des passages depuis data/watch/veille_cache.md.
+    """Retourne des passages RAG pertinents pour la requête.
 
-    Mode stub : le paramètre query est ignoré, tous les passages sont retournés.
-    Fallback vers une source par défaut si le fichier est absent ou vide.
+    Stratégie :
+    1. Si Azure AI Search est configuré (variables ``AZURE_SEARCH_ENDPOINT``,
+       ``AZURE_SEARCH_API_KEY``, ``AZURE_SEARCH_INDEX_NAME`` toutes définies),
+       délègue à ``_azure_client.search()``.
+    2. En cas d'absence de config ou d'échec Azure, bascule sur le stub local
+       (``data/watch/veille_cache.md``).
+
+    Args:
+        query: La requête de recherche (utilisée uniquement en mode Azure).
+
+    Returns:
+        Liste de dicts avec les clés ``title`` et ``excerpt``.
     """
-    logger.debug("stub retrieve – query ignorée : %r", query)
+    if is_configured():
+        results = azure_search(query)
+        if results:
+            return results
+        logger.info("Azure AI Search n'a retourné aucun résultat, fallback stub")
+
+    return _stub_retrieve(query)
+
+
+def _stub_retrieve(query: str) -> list[dict[str, str]]:
+    """Lit data/watch/veille_cache.md et retourne tous les passages."""
+    logger.debug("stub retrieve – query : %r", query)
 
     if not CACHE_PATH.exists():
         logger.warning("veille_cache.md introuvable, utilisation du fallback")

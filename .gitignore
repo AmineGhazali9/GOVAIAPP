@@ -12,3 +12,5 @@ build/
 # IDE
 .vscode/settings.json
 *.DS_Store
+
+.vscode/mcp.json

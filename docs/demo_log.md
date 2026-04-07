@@ -163,3 +163,131 @@ pytest -q
 | 2026-04-05 19:44 | Dev | Incrément 3 – `docs/demo_log.md` mis à jour SESSION 03 | ✅ Succès |
 | 2026-04-05 19:54 | QA | Code review `app/ui/app.py` + `tests/test_ui_smoke.py` — score initial 7.5/10 | ⚠️ 2 majeurs, 3 mineurs |
 | 2026-04-05 19:54 | Dev | Correctifs review : `httpx.RequestError` fallback, `call_generate_policy` testable (`base_url`), type hints `dict[str,Any]`, `data.get("policy_markdown")`, `_MATURITE_LABELS` dict, +4 tests `call_generate_policy` (7 → 12 tests UI) | ✅ Succès |
+| 2026-04-05 20:00 | Dev | Etape 1/4 - Cree app/foundry/client.py (AIProjectClient SDK v2, conversations API, lazy import, fallback) | OK |
+| 2026-04-05 20:20 | Dev | Etape 1 complete - .env.example + README section Foundry (Entra ID, RBAC, commandes) | OK |
+| 2026-04-05 21:00 | Dev | Etape 2 - Foundry integre: client.py (AgentsClient), orchestrator (generate_policy_foundry), routes (feature flag + fallback), test monkeypatch | OK |
+| 2026-04-05 21:30 | QA | Tests integration Foundry: test_foundry_disabled_uses_stub + test_foundry_enabled_missing_config_fallback (15/15 OK). Validation live: scripts/test_foundry_minimal.py run COMPLETED. Strategie fallback: si Foundry echoue -> stub automatique | OK |
+
+---
+
+## SESSION 04 — RAG : Azure AI Search avec fallback stub
+
+### Objectif
+Remplacer le stub RAG pur par un retriever conditionnel : Azure AI Search quand configuré, stub local sinon. La signature `retrieve(query)` reste inchangée.
+
+### Fichiers créés / modifiés
+
+| Fichier | Action | Description |
+|---------|--------|-------------|
+| `app/rag/_azure_client.py` | ➕ Créé | Client Azure AI Search (SDK `azure-search-documents`, gestion AzureError/ImportError/réseau, retourne `[]` sur tout échec) |
+| `app/rag/retriever.py` | ✏️ Modifié | Routing : `is_configured()` → Azure → fallback stub ; `_stub_retrieve()` extrait en fonction privée |
+| `tests/test_rag_smoke.py` | ➕ Créé | 4 smoke tests : sans vars, items title+excerpt, config partielle, `is_configured()` false |
+
+### Variables d'environnement Azure AI Search
+
+| Variable | Description |
+|---|---|
+| `AZURE_SEARCH_ENDPOINT` | URL du service Azure AI Search |
+| `AZURE_SEARCH_API_KEY` | Clé API Azure AI Search |
+| `AZURE_SEARCH_INDEX_NAME` | Nom de l'index |
+
+> Si absentes ou incomplètes → fallback transparent sur `data/watch/veille_cache.md`.
+
+### Commandes
+
+```powershell
+pytest -q   # tous les tests doivent passer
+```
+
+### Résultat attendu
+- Tests existants inchangés.
+- 4 nouveaux smoke tests RAG verts, sans dépendance Azure live.
+
+### Journal SESSION 04
+
+| Date | Agent | Action | Résultat |
+|------|-------|--------|----------|
+| 2026-04-06 01:45 | Validator | Code review PR RAG – verdict REJETÉ (fichiers manquants, credentials .env) | ❌ Rejeté |
+| 2026-04-06 01:49 | Dev | Création `_azure_client.py` + refactoring `retriever.py` + `test_rag_smoke.py` | ✅ Succès |
+| 2026-04-05 22:00 | Dev | Streamlit finalise: indicateur mode Foundry/Stub ajoute, gestion erreurs validee, 19/19 tests OK | OK |
+
+---
+
+## SESSION 07  Release Validation & Cleanup
+
+### Objectif
+Validation release complète : nettoyage du code obsolète, audit sécurité, tests déterministes, validation E2E (mode stub + fallback Foundry), et ouverture d'une PR propre.
+
+### Agent : Validator (ReleaseValidator)
+### Date : 2026-04-06
+
+### Cleanup effectué
+
+| Élément supprimé | Justification |
+|---|---|
+| `SETUP_INSTRUCTIONS.md` | Script d'instructions temporaire, remplacé par README |
+| `check_syntax.bat` | Script ad-hoc de vérification syntaxe |
+| `create_core.py` | Script de scaffolding initial |
+| `create_structure.bat` | Script de scaffolding initial |
+| `direct_syntax_check.py` | Script ad-hoc |
+| `run_setup.py` | Script de setup temporaire |
+| `setup_core_files.py` | Script de scaffolding initial |
+| `setup_structure.py` | Script de scaffolding initial |
+| `syntax_check.py` | Script ad-hoc |
+| `app/core/` | Répertoire déplacé (template dans `data/`) |
+
+### Audit sécurité
+
+- `.env` : gitignored, non tracké  OK
+- `.env.example` : placeholders uniquement, aucune valeur réelle  OK
+- Code Python/JSON : aucun secret hardcodé (grep vérifié)  OK
+- `.vscode/mcp.json` : ajouté au `.gitignore` (ref token via env var)
+
+### Tests
+
+```
+pytest -v : 23 passed in 26s
+- test_autogen_smoke.py .... (4)
+- test_rag_smoke.py ....     (4)
+- test_smoke.py .......      (7)
+- test_ui_smoke.py ........  (8)
+```
+
+Stratégie : tous les tests sont déterministes (stub forcé via monkeypatch). Aucune dépendance Azure/Foundry live requise pour `pytest`.
+
+### Validation E2E
+
+| Scénario | Commande | Résultat |
+|---|---|---|
+| Health | `GET /health` | `{"status":"ok"}` |
+| Stub (FOUNDRY_ENABLED=false) | `POST /generate-policy` | 200  policy_markdown (1221 chars) + 4 sources |
+| Fallback (Foundry manquant) | `POST /generate-policy` | 200  fallback stub sans crash |
+
+### Commandes de reproduction
+
+```powershell
+# Installer
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+
+# Tests
+python -m pytest -q
+
+# API
+uvicorn app.api.main:app --reload --port 8000
+
+# UI
+streamlit run app/ui/app.py
+```
+
+### Journal
+
+| Date | Agent | Action | Résultat |
+|------|-------|--------|----------|
+| 2026-04-06 | Validator | Cleanup 9 scripts obsolètes + app/core/ | OK |
+| 2026-04-06 | Validator | Audit sécurité (secrets, .env, .gitignore) | OK |
+| 2026-04-06 | Validator | Tests pytest -v : 23 passed | OK |
+| 2026-04-06 | Validator | E2E stub + fallback : 200 OK | OK |
+| 2026-04-06 | Validator | Mise à jour docs/demo_log.md | OK |
+| 2026-04-06 | Validator | PR via MCP GitHub + Copilot Review | En cours |
